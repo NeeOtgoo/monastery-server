@@ -14,7 +14,10 @@ class Query(
 
 class Mutation(
     account.schema.Mutation,
-    apps.contact.schema.Mutation
+    apps.contact.schema.Mutation,
+    apps.tsagaan_sar.schema.Mutation,
+    apps.nom.schema.Mutation,
+    graphene.ObjectType
 ):
     pass
     

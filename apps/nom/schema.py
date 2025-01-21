@@ -1,6 +1,6 @@
 import graphene
 from graphene_django.types import DjangoObjectType
-from .models import Nomiin_torol, Nom, TsagaanSariinNom
+from .models import Nomiin_torol, Nom
 from utils.utils import custom_paginate
 
 class Nomiin_torolType(DjangoObjectType):
@@ -12,11 +12,6 @@ class NomType(DjangoObjectType):
     class Meta:
         model = Nom
         fields = ["id", "ner", "tailbar", "une"]
-        
-class TsagaanSariinNomType(DjangoObjectType):
-    class Meta:
-        model = TsagaanSariinNom
-        fields = ["id", "tsagaan_sar", "nom"]
 
 class NomFilterInputType(graphene.InputObjectType):
     ner = graphene.String()
@@ -37,10 +32,9 @@ class Query(graphene.ObjectType):
         per_page=graphene.Int(), 
         filter=NomFilterInputType()
     )
-    tsagaan_sariin_nom = graphene.List(TsagaanSariinNomType)
     nomiin_torol_by_id = graphene.Field(Nomiin_torolType, id=graphene.Int(required=True))
     nom_by_id = graphene.Field(NomType, id=graphene.Int(required=True))
-    tsagaan_sariin_nom_by_id = graphene.Field(TsagaanSariinNomType, id=graphene.Int(required=True))
+    all_noms = graphene.List(NomType)
 
     def resolve_nomiin_torol(self, info):
         return Nomiin_torol.objects.all()
@@ -67,12 +61,47 @@ class Query(graphene.ObjectType):
             'page': page,
             'per_page': per_page
         }
-
-    def resolve_tsagaan_sariin_nom(self, info):
-        return TsagaanSariinNom.objects.all()
     
     def resolve_nomiin_torol_by_id(self, info, id):
         return Nomiin_torol.objects.get(pk=id)
     
     def resolve_nom_by_id(self, info, id):
         return Nom.objects.get(pk=id)
+    
+class CreateOrUpdateNom(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=False)
+        ner = graphene.String(required=True)
+        tailbar = graphene.String(required=True)
+        une = graphene.Int(required=True)
+
+    nom = graphene.Field(NomType)
+
+    def mutate(self, info, ner, tailbar, une, id=None):
+        if id:
+            nom = Nom.objects.get(pk=id)
+            nom.ner = ner
+            nom.tailbar = tailbar
+            nom.une = une
+            nom.save()
+        else:
+            nom = Nom.objects.create(ner=ner, tailbar=tailbar, une=une)
+        return CreateOrUpdateNom(nom=nom)
+
+class DeleteNom(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+
+    def mutate(self, info, id):
+        try:
+            nom = Nom.objects.get(pk=id)
+            nom.delete()
+            return DeleteNom(success=True)
+        except Nom.DoesNotExist:
+            return DeleteNom(success=False)
+
+class Mutation(graphene.ObjectType):
+    create_or_update_nom = CreateOrUpdateNom.Field()
+    delete_nom = DeleteNom.Field()
