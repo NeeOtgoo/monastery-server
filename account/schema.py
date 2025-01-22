@@ -8,7 +8,7 @@ from .models import CustomUser
 class UserType(DjangoObjectType):
     class Meta:
         model = CustomUser
-        fields = ["id", "first_name", "last_name", "phone", "email"]
+        fields = ["id", "first_name", "last_name", "phone", "phone"]
 
 class Query(graphene.ObjectType):
     me = graphene.Field(UserType)
@@ -21,7 +21,7 @@ class Query(graphene.ObjectType):
 
 class Login(graphene.Mutation):
     class Arguments:
-        email = graphene.String()
+        phone = graphene.String()
         password = graphene.String()
         
     success = graphene.Boolean(default_value=False)
@@ -29,20 +29,20 @@ class Login(graphene.Mutation):
     token = graphene.String(default_value=None)
     
     @staticmethod
-    def mutate(self, info, email, password):
+    def mutate(self, info, phone, password):
         errors = {}
         success = False
         token = None
 
         try:
-            user = get_user_model().objects.get(email=email)
+            user = get_user_model().objects.get(phone=phone)
             if user.check_password(password):
                 success = True
                 token = get_token(user)
             else:
-                errors = {"password": "И-мэйл эсвэл нууц үг буруу байна"}
+                errors = {"password": "Утасны дугаар эсвэл нууц үг буруу байна"}
         except CustomUser.DoesNotExist as e:
-            errors = {"password": "И-мэйл эсвэл нууц үг буруу байна"}
+            errors = {"password": "Утасны дугаар эсвэл нууц үг буруу байна"}
         
         return Login(success=success, errors=errors, token=token)
 
