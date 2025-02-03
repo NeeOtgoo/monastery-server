@@ -303,3 +303,6 @@ class JoinZahialgaHural(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     create_zahialga = CreateZahialga.Field()
     check_zahialga = CheckZahialga.Field()
+    create_zahialga_hural = CreateZahialgaHural.Field()
+    delete_zahialga_hural = DeleteZahialgaHural.Field()
+    join_zahialga_hural = JoinZahialgaHural.Field()
