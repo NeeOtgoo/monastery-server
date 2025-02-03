@@ -4,7 +4,9 @@ import requests
 import json
 import environ
 from datetime import datetime
-from .models import Zahialga, ZahialgaNom, QpayToken
+from requests.structures import CaseInsensitiveDict
+from .models import Zahialga, ZahialgaNom, QpayToken, ZahialgaDeepLink, ZahialgaHural
+from apps.nom.models import Nom
 
 env = environ.Env()
 environ.Env.read_env()
@@ -65,20 +67,27 @@ def resolve_qpay_env_data():
 class ZahialgaType(DjangoObjectType):
     class Meta:
         model = Zahialga
-        fields = ["id", "utas", "ner", "hend", "jil", "huis", "tolov", "torson_ognoo", "uussen_ognoo", "shinechlegdsen_ognoo"]
         
 class ZahialgaNomType(DjangoObjectType):
     class Meta:
         model = ZahialgaNom
         fields = ["id", "zahialga", "nom", "une"]
+        
+class ZahialgaHuralType(DjangoObjectType):
+    class Meta:
+        model = ZahialgaHural
+        fields = ["id", "zahialga", "mute_all"]        
 
-class ZahialgaNomInputType(graphene.ObjectType):
+class ZahialgaNomInputType(graphene.InputObjectType):
     nom = graphene.ID(required=True)
     une = graphene.Int()
-    
 
 class Query(graphene.ObjectType):
-    check_invoice = graphene.Field(ZahialgaType, utas=graphene.Int(required=True))
+    all_zahialga = graphene.List(ZahialgaType)
+    
+    def resolve_all_zahialga(self, info):
+        return Zahialga.objects.all()
+    
     
 class CreateZahialga(graphene.Mutation):
     class Arguments:
@@ -87,18 +96,21 @@ class CreateZahialga(graphene.Mutation):
         hend = graphene.String(required=True)
         jil = graphene.String(required=True)
         huis = graphene.String(required=True)
-        torson_ognoo = graphene.Int(required=True)
+        torson_ognoo = graphene.Date(required=True)
+        is_online = graphene.Boolean(required=True)
         nom = graphene.List(ZahialgaNomInputType, required=True)
         
     success = graphene.Boolean(default_value=False)
     qpay_invoice_code = graphene.String(default_value=None)
     
     @staticmethod
-    def mutate(self, info, utas, ner, hend, jil, huis, torson_ognoo, nom):
+    def mutate(self, info, utas, ner, hend, jil, huis, torson_ognoo, nom, is_online):
         
         qpay_env_data = resolve_qpay_env_data()    
         
-        qpay_call_back_url = "http://tenger.pro:8000/graphql#query=%0Aquery%20check_invoice_status%20%7B%0A%20%20checkInvoiceStatus%20(invoice%3A%20{})%0A%7D"
+        qpay_call_back_url = "https://bd5492c3ee85.ngrok.io/payments?payment_id=1234567"
+        
+        total_price = 0  
         
         zahialga = Zahialga(
             utas=utas,
@@ -111,8 +123,27 @@ class CreateZahialga(graphene.Mutation):
             qpay_qr_text="qpay_qr_text",
             qpay_qr_image="qpay_qr_image",
             qpay_shortUrl="qpay_shortUrl",
-            uniin_dun=0
+            uniin_dun=total_price
         )
+        zahialga.save()
+        
+        for nom_data in nom:
+            try:
+                nom_o = Nom.objects.get(id=nom_data.nom)  # Retrieve the Nom instance by ID
+                if nom_o.une == 0:
+                    nom_une = nom_data.une
+                else:
+                    nom_une = nom_o.une
+                if is_online == True:
+                    nom_une = nom_une * 2
+                    total_price = total_price + nom_une
+                else: 
+                    total_price += nom_une
+                ZahialgaNom.objects.create(zahialga=zahialga, nom=nom_o, une=nom_une)
+            except Nom.DoesNotExist:
+                None
+                
+        zahialga.uniin_dun = total_price
         zahialga.save()
         
         invoice_data = {
@@ -120,12 +151,155 @@ class CreateZahialga(graphene.Mutation):
             "sender_invoice_no": zahialga.uuid4,
             "invoice_receiver_code": zahialga.uuid4,
             "sender_branch_code": "test",
-            "amount": invoice.amount,
-            "invoice_description": "(бүртгэлийн хураамж)",
-            "callback_url": qpay_call_back_url.format(invoice.pk)
+            "amount": zahialga.uniin_dun,
+            "invoice_description": zahialga.uuid4,
+            "callback_url": qpay_call_back_url
         }
         
-        return CreateZahialga(zahialga=zahialga)
+        json_invoice_data = json.dumps(invoice_data)
+        
+        invoice_headers = CaseInsensitiveDict()
+        invoice_headers["Content-Type"] = "application/json"
+        invoice_headers["charset"] = "utf-8"
+        invoice_headers["Authorization"] = 'Bearer {}'.format(qpay_env_data.token)
+
+        qpay_url = qpay_env_data.url+'/invoice'
+        
+        invoice_resp = requests.post(
+            qpay_url,
+            headers=invoice_headers,
+            data=json_invoice_data
+        )
+        
+        print(invoice_resp.content)
+        
+        invoice_resp = json.loads(invoice_resp.content)
+        
+        zahialga.qpay_invoice_id = invoice_resp.get('invoice_id')
+        zahialga.qpay_qr_text = invoice_resp.get('qr_text')
+        zahialga.qpay_qr_image = invoice_resp.get('qr_image')
+        zahialga.qpay_shortUrl = invoice_resp.get('qPay_shortUrl')
+        zahialga.save()
+        
+        qpay_deeplinks = invoice_resp.get('urls')
+        for link in qpay_deeplinks:
+            deep_link = ZahialgaDeepLink(
+                zahialga=zahialga,
+                name=link['name'],
+                logo=link['logo'],
+                link=link['link']
+            )
+            deep_link.save()
+        
+        return CreateZahialga(success=True, qpay_invoice_code=zahialga.qpay_invoice_id)
+
+class CheckZahialga(graphene.Mutation):
+    class Arguments:
+        utas = graphene.Int(required=True)
+
+    success = graphene.Boolean(default_value=False)
+    status = graphene.String(default_value="PENDING")
+    url = graphene.String(default_value=None)
+    mute_all = graphene.Boolean(default_value=False)
+    root_name = graphene.String(default_value=None)
+
+    @staticmethod
+    def mutate(self, info, utas):
+        
+        qpay_env_data = resolve_qpay_env_data()   
+        
+        zahialga = Zahialga.objects.filter(utas=utas).order_by('-pk').first()
+        
+        request_data = {
+            "object_type": "INVOICE",
+            "object_id": zahialga.qpay_invoice_id,
+            "offset": {
+                'page_number': 1,
+                'page_limit': 100
+            }
+        }
+        json_request_data = json.dumps(request_data)
+
+        request_headers = CaseInsensitiveDict()
+        request_headers["Content-Type"] = "application/json"
+        request_headers["charset"] = "utf-8"
+        request_headers["Authorization"] = 'Bearer {}'.format(qpay_env_data.token)
+
+        request_url = qpay_env_data.url+'/payment/check'
+
+        request_resp = requests.post(
+            request_url,
+            headers=request_headers,
+            data=json_request_data
+        )
+        request_resp = json.loads(request_resp.content)
+        
+        if request_resp['count'] != 0:
+            zahialga.tolov = "SUCCESS"
+            zahialga.save()
+        
+        try:
+            
+            zahialga_hural = ZahialgaHural.objects.get(zahialga=zahialga)    
+            
+            return CheckZahialga(
+                success=True, 
+                url=zahialga_hural.zahialga.uuid4, 
+                mute_all=zahialga_hural.mute_all, 
+                root_name=zahialga_hural.zahialga.ner,
+                status=zahialga.tolov
+            )
+        except Zahialga.DoesNotExist:
+            return CheckZahialga(success=False)
+        except ZahialgaHural.DoesNotExist:
+            return CheckZahialga(success=False)
+        
+class CreateZahialgaHural(graphene.Mutation):
+    class Arguments:
+        zahialga = graphene.ID(required=True)
+        mute_all = graphene.Boolean(default_value=False)
+        
+    zahialga_hural = graphene.Field(ZahialgaHuralType)
+        
+    def mutate(self, info, zahialga, mute_all):
+        zahialga_o = Zahialga.objects.get(pk=zahialga)
+        zahialga_hural = ZahialgaHural(
+            zahialga=zahialga_o,
+            mute_all=mute_all
+        )
+        zahialga_hural.save()
+        return CreateZahialgaHural(zahialga_hural=zahialga_hural)
     
+class DeleteZahialgaHural(graphene.Mutation):
+    class Arguments:
+        zahialga = graphene.ID(required=True)
+
+    success = graphene.Boolean(default_value=False)
+
+    def mutate(self, info, zahialga):
+        try:
+            zahialga_hural = ZahialgaHural.objects.get(zahialga=zahialga)
+            zahialga_hural.delete()
+            return DeleteZahialgaHural(success=True)
+        except ZahialgaHural.DoesNotExist:
+            return DeleteZahialgaHural(success=False)
+
+class JoinZahialgaHural(graphene.Mutation):
+    class Arguments:
+        zahialga = graphene.ID(required=True)
+
+    success = graphene.Boolean(default_value=False)
+    url = graphene.String(default_value=None)
+    mute_all = graphene.Boolean(default_value=False)
+    root_name = graphene.String(default_value=None)
+
+    def mutate(self, info, zahialga):
+        try:
+            zahialga_hural = ZahialgaHural.objects.get(zahialga=zahialga)
+            return JoinZahialgaHural(success=True, url=zahialga_hural.zahialga.uuid4, mute_all=zahialga_hural.mute_all, root_name="Ламтан")
+        except ZahialgaHural.DoesNotExist:
+            return JoinZahialgaHural(success=False)
+
 class Mutation(graphene.ObjectType):
     create_zahialga = CreateZahialga.Field()
+    check_zahialga = CheckZahialga.Field()

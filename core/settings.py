@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'account',
     'apps.tsagaan_sar',
     'apps.nom',
-    'apps.contact'
+    'apps.contact',
+    'apps.zahialga'
 ]
 
 AUTH_USER_MODEL = 'account.CustomUser'

@@ -1,4 +1,4 @@
-from django.db.models import Model, CharField, DateField, ForeignKey, CASCADE, IntegerField, TextField
+from django.db.models import Model, CharField, DateField, ForeignKey, CASCADE, IntegerField, TextField, BooleanField
 import uuid
 from apps.nom.models import Nom
 from utils.model import JIL_CHOICES, HUIS_CHOICES, TOLBORIIN_TOLOV_CHOICES
@@ -31,6 +31,9 @@ class Zahialga(Model):
         if not self.uuid4:
             self.uuid4 = str(uuid.uuid4())
         super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return self.uuid4
 
 class ZahialgaDeepLink(Model):
     zahialga = ForeignKey(Zahialga, on_delete=CASCADE)
@@ -42,3 +45,7 @@ class ZahialgaNom(Model):
     zahialga = ForeignKey('zahialga', on_delete=CASCADE)    
     nom = ForeignKey(Nom, on_delete=CASCADE)
     une = IntegerField()
+    
+class ZahialgaHural(Model):
+    zahialga = ForeignKey('zahialga', on_delete=CASCADE)
+    mute_all = BooleanField(default=False)
