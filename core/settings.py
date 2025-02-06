@@ -51,6 +51,11 @@ INSTALLED_APPS = [
     'apps.zahialga'
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.itgeltugsbayasgalant.mn",
+]
+
+
 AUTH_USER_MODEL = 'account.CustomUser'
 
 MIDDLEWARE = [
