@@ -67,7 +67,12 @@ def resolve_qpay_env_data():
 class ZahialgaType(DjangoObjectType):
     class Meta:
         model = Zahialga
-        
+
+class ZahialgaDeepLinkType(DjangoObjectType):
+    class Meta:
+        model = ZahialgaDeepLink
+        fields = ["id", "zahialga", "name", "logo", "link"]
+
 class ZahialgaNomType(DjangoObjectType):
     class Meta:
         model = ZahialgaNom
