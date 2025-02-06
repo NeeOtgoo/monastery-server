@@ -202,6 +202,7 @@ class CheckZahialga(graphene.Mutation):
     url = graphene.String(default_value=None)
     mute_all = graphene.Boolean(default_value=False)
     root_name = graphene.String(default_value=None)
+    zahialga = graphene.Field(ZahialgaType)
 
     @staticmethod
     def mutate(self, info, utas):
@@ -247,6 +248,7 @@ class CheckZahialga(graphene.Mutation):
                 url=zahialga_hural.zahialga.uuid4, 
                 mute_all=zahialga_hural.mute_all, 
                 root_name=zahialga_hural.zahialga.ner,
+                zahialga=zahialga,
                 status=zahialga.tolov
             )
         except Zahialga.DoesNotExist:
