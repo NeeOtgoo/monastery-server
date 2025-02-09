@@ -259,7 +259,7 @@ class CheckZahialga(graphene.Mutation):
         except Zahialga.DoesNotExist:
             return CheckZahialga(success=False)
         except ZahialgaHural.DoesNotExist:
-            return CheckZahialga(success=False)
+            return CheckZahialga(success=False, zahialga=zahialga, status=zahialga.tolov)
         
 class CreateZahialgaHural(graphene.Mutation):
     class Arguments:
