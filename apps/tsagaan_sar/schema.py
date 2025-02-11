@@ -3,6 +3,7 @@ from graphene_django.types import DjangoObjectType
 from .models import TsagaanSar, TsagaanSarSuudal, TsagaaSarSuudalZasal
 from utils.utils import calculate_mongolian_zodiac
 from apps.nom.models import Nom
+from graphql_jwt.decorators import login_required
 
 class TsagaanSarType(DjangoObjectType):
     class Meta:
@@ -28,12 +29,36 @@ class Query(graphene.ObjectType):
     tsagaan_sar = graphene.List(TsagaanSarType)
     tsagaan_sar_by_id = graphene.Field(TsagaanSarType, id=graphene.Int(required=True))
     jil_ognoogoor = graphene.Field(JilType, ognoo=graphene.Int(required=True))
+    all_tsagaan_sar_suudal = graphene.List(TsagaanSarSuudal, id=graphene.ID(required=True))
+    all_tsagaan_sariin_suudal_zasal = graphene.List(TsagaaSarSuudalZasalType, tsagaan_sar_suudal_id=graphene.Int(required=True))
 
+    @login_required
     def resolve_tsagaan_sar(self, info):
         return TsagaanSar.objects.all()
     
+    @login_required
     def resolve_tsagaan_sar_by_id(self, info, id):
         return TsagaanSar.objects.get(pk=id)
+    
+    @login_required
+    def resolve_tsagaan_sar_suudal(self, info, tsagaan_sar_id):
+
+        tsagaan_sar = TsagaanSar.objects.get(pk=tsagaan_sar_id)
+
+        return TsagaanSarSuudal.objects.filter(tsagaan_sar=tsagaan_sar)
+    
+    # def resolve_tsagaan_sariin_suudal_zasal(self, info, suudal, jil, huis, ognoo):
+        
+    #     suudal_o = TsagaanSarSuudal.objects.get(suudal=suudal, jil=jil, huis=huis, ognoo=ognoo)
+        
+    #     nom_o = Nom.objects.filter(tsagaan_sar_suu)
+    
+    @login_required
+    def resolve_all_tsagaan_sariin_suudal_zasal(self, info, tsagaan_sar_suudal_id):
+        
+        tsagaan_sar_suudal = TsagaanSarSuudal.objects.get(pk=tsagaan_sar_suudal_id)
+        
+        return TsagaaSarSuudalZasal.objects.filter(tsagaan_sar_suudal=tsagaan_sar_suudal)
     
     def resolve_jil_ognoogoor(self, info, ognoo):
 
@@ -53,6 +78,7 @@ class CreateOrUpdateTsagaanSar(graphene.Mutation):
 
     tsagaan_sar = graphene.Field(TsagaanSarType)
 
+    @login_required
     def mutate(self, info, id=None, ner=None, ognoo=None):
         if id:
             tsagaan_sar = TsagaanSar.objects.get(pk=id)
@@ -69,6 +95,7 @@ class DeleteTsagaanSar(graphene.Mutation):
 
     success = graphene.Boolean()
 
+    @login_required
     def mutate(self, info, id):
         try:
             tsagaan_sar = TsagaanSar.objects.get(pk=id)
@@ -88,6 +115,7 @@ class CreateOrUpdateTsagaanSarSuudal(graphene.Mutation):
 
     tsagaan_sar_suudal = graphene.Field(TsagaanSarSuudalType)
 
+    @login_required
     def mutate(self, info, tsagaan_sar_id, suudal, jil, huis, ognoo, id=None):
         if id:
             tsagaan_sar_suudal = TsagaanSarSuudal.objects.get(pk=id)
@@ -113,6 +141,7 @@ class DeleteTsagaanSarSuudal(graphene.Mutation):
 
     success = graphene.Boolean()
 
+    @login_required
     def mutate(self, info, id):
         try:
             tsagaan_sar_suudal = TsagaanSarSuudal.objects.get(pk=id)
@@ -129,6 +158,7 @@ class CreateOrUpdateTsagaaSarSuudalZasal(graphene.Mutation):
 
     tsagaa_sar_suudal_zasal = graphene.Field(TsagaaSarSuudalZasalType)
 
+    @login_required
     def mutate(self, info, tsagaan_sar_suudal_id, nom_id, id=None):
         
         nom_o = Nom.objects.get(pk=nom_id)
@@ -151,6 +181,7 @@ class DeleteTsagaaSarSuudalZasal(graphene.Mutation):
 
     success = graphene.Boolean()
 
+    @login_required
     def mutate(self, info, id):
         try:
             tsagaa_sar_suudal_zasal = TsagaaSarSuudalZasal.objects.get(pk=id)
