@@ -29,7 +29,7 @@ class Query(graphene.ObjectType):
     tsagaan_sar = graphene.List(TsagaanSarType)
     tsagaan_sar_by_id = graphene.Field(TsagaanSarType, id=graphene.Int(required=True))
     jil_ognoogoor = graphene.Field(JilType, ognoo=graphene.Int(required=True))
-    all_tsagaan_sar_suudal = graphene.List(TsagaanSarSuudal, id=graphene.ID(required=True))
+    all_tsagaan_sar_suudal = graphene.List(TsagaanSarSuudalType, id=graphene.ID(required=True))
     all_tsagaan_sariin_suudal_zasal = graphene.List(TsagaaSarSuudalZasalType, tsagaan_sar_suudal_id=graphene.Int(required=True))
 
     @login_required
