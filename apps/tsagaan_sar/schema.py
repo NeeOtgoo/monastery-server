@@ -41,7 +41,7 @@ class Query(graphene.ObjectType):
         return TsagaanSar.objects.get(pk=id)
     
     @login_required
-    def resolve_tsagaan_sar_suudal(self, info, tsagaan_sar_id):
+    def resolve_all_tsagaan_sar_suudal(self, info, tsagaan_sar_id):
 
         tsagaan_sar = TsagaanSar.objects.get(pk=tsagaan_sar_id)
 
