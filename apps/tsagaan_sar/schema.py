@@ -3,7 +3,9 @@ from graphene_django.types import DjangoObjectType
 from .models import TsagaanSar, TsagaanSarSuudal, TsagaaSarSuudalZasal
 from utils.utils import calculate_mongolian_zodiac
 from apps.nom.models import Nom
+from apps.nom.schema import NomType
 from graphql_jwt.decorators import login_required
+from graphql import GraphQLError
 
 class TsagaanSarType(DjangoObjectType):
     class Meta:
@@ -31,7 +33,8 @@ class Query(graphene.ObjectType):
     jil_ognoogoor = graphene.Field(JilType, ognoo=graphene.Int(required=True))
     all_tsagaan_sar_suudal = graphene.List(TsagaanSarSuudalType, tsagaan_sar_id=graphene.ID(required=True))
     all_tsagaan_sariin_suudal_zasal = graphene.List(TsagaaSarSuudalZasalType, tsagaan_sar_suudal_id=graphene.Int(required=True))
-
+    tsagaan_sar_suudal_zasal_nom = graphene.List(NomType, jil=graphene.String(required=True), huis=graphene.String(required=True), ognoo=graphene.Int(required=True))
+    
     @login_required
     def resolve_tsagaan_sar(self, info):
         return TsagaanSar.objects.all()
@@ -46,12 +49,6 @@ class Query(graphene.ObjectType):
         tsagaan_sar = TsagaanSar.objects.get(pk=tsagaan_sar_id)
 
         return TsagaanSarSuudal.objects.filter(tsagaan_sar=tsagaan_sar)
-    
-    # def resolve_tsagaan_sariin_suudal_zasal(self, info, suudal, jil, huis, ognoo):
-        
-    #     suudal_o = TsagaanSarSuudal.objects.get(suudal=suudal, jil=jil, huis=huis, ognoo=ognoo)
-        
-    #     nom_o = Nom.objects.filter(tsagaan_sar_suu)
     
     @login_required
     def resolve_all_tsagaan_sariin_suudal_zasal(self, info, tsagaan_sar_suudal_id):
@@ -70,6 +67,14 @@ class Query(graphene.ObjectType):
             element=jil['element']
         )
 
+    def resolve_tsagaan_sar_suudal_zasal_nom(self, info, jil, huis, ognoo):
+        
+        try:
+            suudal_o = TsagaanSarSuudal.objects.get(jil=jil, huis=huis, ognoo__year=ognoo)
+        except TsagaanSarSuudal.DoesNotExist:
+            raise GraphQLError("Таны оруулсан мэдээлэл буруу байна")
+        return Nom.objects.filter(tsagaasarsuudalzasal__tsagaan_sar_suudal=suudal_o) 
+    
 class CreateOrUpdateTsagaanSar(graphene.Mutation):
     class Arguments:
         id = graphene.Int()
