@@ -139,11 +139,12 @@ class CreateZahialga(graphene.Mutation):
                     nom_une = nom_data.une
                 else:
                     nom_une = nom_o.une
-                if is_online == True:
-                    nom_une = nom_une * 2
-                    total_price = total_price + nom_une
-                else: 
-                    total_price += nom_une
+                # if is_online == True:
+                #     nom_une = nom_une * 2
+                #     total_price = total_price + nom_une
+                # else: 
+                #     total_price += nom_une
+                total_price += nom_une
                 ZahialgaNom.objects.create(zahialga=zahialga, nom=nom_o, une=nom_une)
             except Nom.DoesNotExist:
                 None
