@@ -26,7 +26,13 @@ class TsagaaSarSuudalZasalType(DjangoObjectType):
     class Meta:
         model = TsagaaSarSuudalZasal
         fields = ["id", "tsagaan_sar_suudal", "nom"]
-    
+
+class TsagaanSarSuudalInputType(graphene.InputObjectType):
+    suudal = graphene.String(required=True)
+    jil = graphene.String(required=True)
+    huis = graphene.String(required=True)
+    ognoo = graphene.Date()
+ 
 class Query(graphene.ObjectType):
     tsagaan_sar = graphene.List(TsagaanSarType)
     tsagaan_sar_by_id = graphene.Field(TsagaanSarType, id=graphene.Int(required=True))
@@ -194,6 +200,29 @@ class DeleteTsagaaSarSuudalZasal(graphene.Mutation):
             return DeleteTsagaaSarSuudalZasal(success=True)
         except TsagaaSarSuudalZasal.DoesNotExist:
             return DeleteTsagaaSarSuudalZasal(success=False)
+
+class MassStoreTsagaanSarSuudal(graphene.Mutation):
+    
+    class Arguments:
+        tsagaan_sar = graphene.ID()
+        suudal = graphene.List(TsagaanSarSuudalInputType)
+    
+    success = graphene.Boolean()
+    
+    @login_required
+    def mutate(self, info, tsagaan_sar, suudal):
+        
+        tsagaan_sar_o = TsagaanSar.objects.get(pk=tsagaan_sar)
+        
+        for s in suudal:
+            TsagaanSarSuudal.objects.create(
+                tsagaan_sar=tsagaan_sar_o,
+                suudal=s.suudal,
+                jil=s.jil,
+                huis=s.huis,
+                ognoo=s.ognoo
+            )
+        return MassStoreTsagaanSarSuudal(success=True)
         
 class Mutation(graphene.ObjectType):
     create_or_update_tsagaan_sar = CreateOrUpdateTsagaanSar.Field()
@@ -202,3 +231,4 @@ class Mutation(graphene.ObjectType):
     delete_tsagaan_sar_suudal = DeleteTsagaanSarSuudal.Field()
     create_or_update_tsagaa_sar_suudal_zasal = CreateOrUpdateTsagaaSarSuudalZasal.Field()
     delete_tsagaa_sar_suudal_zasal = DeleteTsagaaSarSuudalZasal.Field()
+    mass_store_tsagaan_sar_suudal = MassStoreTsagaanSarSuudal.Field()

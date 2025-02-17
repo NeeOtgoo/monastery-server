@@ -13,6 +13,11 @@ class NomType(DjangoObjectType):
         model = Nom
         fields = ["id", "ner", "tailbar", "une"]
 
+class NomInputType(graphene.InputObjectType):
+    ner = graphene.String()
+    tailbar = graphene.String()
+    une = graphene.Int()
+
 class NomFilterInputType(graphene.InputObjectType):
     ner = graphene.String()
     tailbar = graphene.String()
@@ -102,6 +107,18 @@ class DeleteNom(graphene.Mutation):
         except Nom.DoesNotExist:
             return DeleteNom(success=False)
 
+class MassStoreNom(graphene.Mutation):
+    class Arguments:
+        nom = graphene.List(NomInputType)
+        
+    success = graphene.Boolean()
+    
+    def mutate(self, info, nom):
+        for n in nom:
+            Nom.objects.create(ner=n.ner, tailbar=n.tailbar, une=n.une)
+        return MassStoreNom(success=True)
+
 class Mutation(graphene.ObjectType):
     create_or_update_nom = CreateOrUpdateNom.Field()
     delete_nom = DeleteNom.Field()
+    mass_store_nom = MassStoreNom.Field()
