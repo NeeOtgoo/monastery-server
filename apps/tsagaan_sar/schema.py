@@ -1,6 +1,6 @@
 import graphene
 from graphene_django.types import DjangoObjectType
-from .models import TsagaanSar, TsagaanSarSuudal, TsagaaSarSuudalZasal
+from .models import TsagaanSar, TsagaanSarSuudal, TsagaaSarSuudalZasal, BigiinToolol
 from utils.utils import calculate_mongolian_zodiac
 from apps.nom.models import Nom
 from apps.nom.schema import NomType
@@ -27,6 +27,11 @@ class TsagaaSarSuudalZasalType(DjangoObjectType):
         model = TsagaaSarSuudalZasal
         fields = ["id", "tsagaan_sar_suudal", "nom"]
 
+class BilgiinToololType(DjangoObjectType):
+    class Meta:
+        model = BigiinToolol
+        fields = ["id", "bilgiin_toolol", "ognoo"]
+
 class TsagaanSarSuudalInputType(graphene.InputObjectType):
     suudal = graphene.String(required=True)
     jil = graphene.String(required=True)
@@ -40,6 +45,9 @@ class Query(graphene.ObjectType):
     all_tsagaan_sar_suudal = graphene.List(TsagaanSarSuudalType, tsagaan_sar_id=graphene.ID(required=True))
     all_tsagaan_sariin_suudal_zasal = graphene.List(TsagaaSarSuudalZasalType, tsagaan_sar_suudal_id=graphene.Int(required=True))
     tsagaan_sar_suudal_zasal_nom = graphene.List(NomType, jil=graphene.String(required=True), huis=graphene.String(required=True), ognoo=graphene.Int(required=True))
+    all_bilgiin_toolol = graphene.List(BilgiinToololType)
+    todays_bilgiin_toolol = graphene.Field(BilgiinToololType, ognoo=graphene.Date(required=True))
+    
     
     @login_required
     def resolve_tsagaan_sar(self, info):
@@ -54,7 +62,7 @@ class Query(graphene.ObjectType):
 
         tsagaan_sar = TsagaanSar.objects.get(pk=tsagaan_sar_id)
 
-        return TsagaanSarSuudal.objects.filter(tsagaan_sar=tsagaan_sar)
+        return TsagaanSarSuudal.objects.filter(tsagaan_sar=tsagaan_sar).order_by('-ognoo')
     
     @login_required
     def resolve_all_tsagaan_sariin_suudal_zasal(self, info, tsagaan_sar_suudal_id):
@@ -80,6 +88,17 @@ class Query(graphene.ObjectType):
         except TsagaanSarSuudal.DoesNotExist:
             raise GraphQLError("Таны оруулсан мэдээлэл буруу байна")
         return Nom.objects.filter(tsagaasarsuudalzasal__tsagaan_sar_suudal=suudal_o) 
+    
+    @login_required
+    def resolve_all_bilgiin_toolol(self, info):
+        return BigiinToolol.objects.all().order_by('-ognoo')
+    
+    def resolve_todays_bilgiin_toolol(self, info, ognoo):
+        
+        try:
+            return BigiinToolol.objects.get(ognoo=ognoo)
+        except BigiinToolol.DoesNotExist:
+            raise GraphQLError("Байхгүээ")
     
 class CreateOrUpdateTsagaanSar(graphene.Mutation):
     class Arguments:
@@ -223,6 +242,40 @@ class MassStoreTsagaanSarSuudal(graphene.Mutation):
                 ognoo=s.ognoo
             )
         return MassStoreTsagaanSarSuudal(success=True)
+ 
+class CreateOrUpdateBigiinToolol(graphene.Mutation):
+    class Arguments:
+        id = graphene.Int()
+        bilgiin_toolol = graphene.String(required=True)
+        ognoo = graphene.Date(required=True)
+
+    bigiin_toolol = graphene.Field(BilgiinToololType)
+
+    @login_required
+    def mutate(self, info, id=None, bilgiin_toolol=None, ognoo=None):
+        if id:
+            bigiin_toolol = BigiinToolol.objects.get(pk=id)
+            bigiin_toolol.bilgiin_toolol = bilgiin_toolol
+            bigiin_toolol.ognoo = ognoo
+            bigiin_toolol.save()
+        else:
+            bigiin_toolol = BigiinToolol.objects.create(bilgiin_toolol=bilgiin_toolol, ognoo=ognoo)
+        return CreateOrUpdateBigiinToolol(bigiin_toolol=bigiin_toolol)
+    
+class DeleteBigiinToolol(graphene.Mutation):
+    class Arguments:
+        id = graphene.Int(required=True)
+
+    success = graphene.Boolean()
+
+    @login_required
+    def mutate(self, info, id):
+        try:
+            bigiin_toolol = BigiinToolol.objects.get(pk=id)
+            bigiin_toolol.delete()
+            return DeleteBigiinToolol(success=True)
+        except BigiinToolol.DoesNotExist:
+            return DeleteBigiinToolol(success=False)
         
 class Mutation(graphene.ObjectType):
     create_or_update_tsagaan_sar = CreateOrUpdateTsagaanSar.Field()
@@ -232,3 +285,5 @@ class Mutation(graphene.ObjectType):
     create_or_update_tsagaa_sar_suudal_zasal = CreateOrUpdateTsagaaSarSuudalZasal.Field()
     delete_tsagaa_sar_suudal_zasal = DeleteTsagaaSarSuudalZasal.Field()
     mass_store_tsagaan_sar_suudal = MassStoreTsagaanSarSuudal.Field()
+    create_or_update_bigiin_toolol = CreateOrUpdateBigiinToolol.Field()
+    delete_bigiin_toolol = DeleteBigiinToolol.Field()

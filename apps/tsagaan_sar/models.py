@@ -16,3 +16,7 @@ class TsagaanSarSuudal(Model):
 class TsagaaSarSuudalZasal(Model):
     tsagaan_sar_suudal = ForeignKey(TsagaanSarSuudal, on_delete=CASCADE)
     nom = ForeignKey(Nom, on_delete=CASCADE)
+    
+class BigiinToolol(Model):
+    bilgiin_toolol = CharField(max_length=100)
+    ognoo = DateField()

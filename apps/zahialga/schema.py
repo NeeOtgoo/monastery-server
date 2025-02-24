@@ -285,8 +285,11 @@ class DeleteZahialgaHural(graphene.Mutation):
     success = graphene.Boolean(default_value=False)
 
     def mutate(self, info, zahialga):
+        
+        zahialga_o = Zahialga.objects.get(pk=zahialga)
+        
         try:
-            zahialga_hural = ZahialgaHural.objects.get(zahialga=zahialga)
+            zahialga_hural = ZahialgaHural.objects.get(zahialga=zahialga_o)
             zahialga_hural.delete()
             return DeleteZahialgaHural(success=True)
         except ZahialgaHural.DoesNotExist:
