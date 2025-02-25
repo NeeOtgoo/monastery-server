@@ -6,6 +6,7 @@ from apps.nom.models import Nom
 from apps.nom.schema import NomType
 from graphql_jwt.decorators import login_required
 from graphql import GraphQLError
+from datetime import date
 
 class TsagaanSarType(DjangoObjectType):
     class Meta:
@@ -46,7 +47,7 @@ class Query(graphene.ObjectType):
     all_tsagaan_sariin_suudal_zasal = graphene.List(TsagaaSarSuudalZasalType, tsagaan_sar_suudal_id=graphene.Int(required=True))
     tsagaan_sar_suudal_zasal_nom = graphene.List(NomType, jil=graphene.String(required=True), huis=graphene.String(required=True), ognoo=graphene.Int(required=True))
     all_bilgiin_toolol = graphene.List(BilgiinToololType)
-    todays_bilgiin_toolol = graphene.Field(BilgiinToololType, ognoo=graphene.Date(required=True))
+    todays_bilgiin_toolol = graphene.Field(BilgiinToololType)
     
     
     @login_required
@@ -93,10 +94,10 @@ class Query(graphene.ObjectType):
     def resolve_all_bilgiin_toolol(self, info):
         return BigiinToolol.objects.all().order_by('-ognoo')
     
-    def resolve_todays_bilgiin_toolol(self, info, ognoo):
+    def resolve_todays_bilgiin_toolol(self, info):
         
         try:
-            return BigiinToolol.objects.get(ognoo=ognoo)
+            return BigiinToolol.objects.get(ognoo=date.today())
         except BigiinToolol.DoesNotExist:
             raise GraphQLError("Байхгүээ")
     
