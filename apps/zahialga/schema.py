@@ -3,10 +3,11 @@ from graphene_django.types import DjangoObjectType
 import requests
 import json
 import environ
-from datetime import datetime
+from datetime import datetime, date
 from requests.structures import CaseInsensitiveDict
 from .models import Zahialga, ZahialgaNom, QpayToken, ZahialgaDeepLink, ZahialgaHural
 from apps.nom.models import Nom
+from graphql_jwt.decorators import login_required
 
 env = environ.Env()
 environ.Env.read_env()
@@ -86,19 +87,34 @@ class ZahialgaHuralType(DjangoObjectType):
 class ZahialgaNomInputType(graphene.InputObjectType):
     nom = graphene.ID(required=True)
     une = graphene.Int()
+    
+class TotalPaidUniinDunType(graphene.ObjectType):
+    zahialga = graphene.List(ZahialgaType)
+    total = graphene.Int()
 
 class Query(graphene.ObjectType):
     all_zahialga = graphene.List(ZahialgaType)
+    niit_orlogo = graphene.Field(
+        TotalPaidUniinDunType,
+        start_date=graphene.Date(required=True),
+        end_date=graphene.Date(required=True),
+    )
+    
+    @login_required
+    def resolve_niit_orlogo(self, info, start_date, end_date):
+        
+        za = Zahialga.calculate_total_paid_uniin_dun(start_date, end_date)
+        
+        return TotalPaidUniinDunType(zahialga=za[0], total=za[1])
     
     def resolve_all_zahialga(self, info):
         return Zahialga.objects.all()
     
-    
 class CreateZahialga(graphene.Mutation):
     class Arguments:
-        utas = graphene.Int(required=True)
-        ner = graphene.String(required=True)
-        hend = graphene.String(required=True)
+        utas = graphene.Int(required=False)
+        ner = graphene.String(required=False)
+        hend = graphene.String(required=False)
         jil = graphene.String(required=True)
         huis = graphene.String(required=True)
         torson_ognoo = graphene.Date(required=True)
@@ -109,7 +125,7 @@ class CreateZahialga(graphene.Mutation):
     qpay_invoice_code = graphene.String(default_value=None)
     
     @staticmethod
-    def mutate(self, info, utas, ner, hend, jil, huis, torson_ognoo, nom, is_online):
+    def mutate(self, info, jil, huis, torson_ognoo, nom, is_online, utas = "", ner = "", hend = ""):
         
         qpay_env_data = resolve_qpay_env_data()    
         
@@ -311,9 +327,22 @@ class JoinZahialgaHural(graphene.Mutation):
         except ZahialgaHural.DoesNotExist:
             return JoinZahialgaHural(success=False)
 
+class SetSuccessZahialga(graphene.Mutation):
+    class Arguments:
+        zahialga = graphene.ID(required=True)
+
+    success = graphene.Boolean(default_value=False)
+
+    def mutate(self, info, zahialga):
+        zahialga_o = Zahialga.objects.get(pk=zahialga)
+        zahialga_o.tolov = "SUCCESS"
+        zahialga_o.save()
+        return SetSuccessZahialga(success=True)
+
 class Mutation(graphene.ObjectType):
     create_zahialga = CreateZahialga.Field()
     check_zahialga = CheckZahialga.Field()
+    set_success_zahialga = SetSuccessZahialga.Field()
     create_zahialga_hural = CreateZahialgaHural.Field()
     delete_zahialga_hural = DeleteZahialgaHural.Field()
     join_zahialga_hural = JoinZahialgaHural.Field()
