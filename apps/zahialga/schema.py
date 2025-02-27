@@ -339,6 +339,57 @@ class SetSuccessZahialga(graphene.Mutation):
         zahialga_o.save()
         return SetSuccessZahialga(success=True)
 
+class CheckZahialgaByQpayInvoiceID(graphene.Mutation):
+    class Arguments:
+        qpay_invoice_id = graphene.String(required=True)
+
+    success = graphene.Boolean(default_value=False)
+    status = graphene.String(default_value="PENDING")
+    zahialga = graphene.Field(ZahialgaType)
+
+    def mutate(self, info, qpay_invoice_id):
+        
+        qpay_env_data = resolve_qpay_env_data()
+        
+        try:    
+            zahialga = Zahialga.objects.get(qpay_invoice_id=qpay_invoice_id)
+        
+            request_data = {
+                "object_type": "INVOICE",
+                "object_id": zahialga.qpay_invoice_id,
+                "offset": {
+                    'page_number': 1,
+                    'page_limit': 100
+                }
+            }
+            json_request_data = json.dumps(request_data)
+
+            request_headers = CaseInsensitiveDict()
+            request_headers["Content-Type"] = "application/json"
+            request_headers["charset"] = "utf-8"
+            request_headers["Authorization"] = 'Bearer {}'.format(qpay_env_data.token)
+
+            request_url = qpay_env_data.url+'/payment/check'
+
+            request_resp = requests.post(
+                request_url,
+                headers=request_headers,
+                data=json_request_data
+            )
+            request_resp = json.loads(request_resp.content)
+            
+            if request_resp['count'] != 0:
+                zahialga.tolov = "SUCCESS"
+                zahialga.save()
+            
+            return CheckZahialgaByQpayInvoiceID(
+                success=True, 
+                zahialga=zahialga,
+                status=zahialga.tolov
+            )
+        except Zahialga.DoesNotExist:
+            return CheckZahialgaByQpayInvoiceID(success=False)
+
 class Mutation(graphene.ObjectType):
     create_zahialga = CreateZahialga.Field()
     check_zahialga = CheckZahialga.Field()
@@ -346,3 +397,4 @@ class Mutation(graphene.ObjectType):
     create_zahialga_hural = CreateZahialgaHural.Field()
     delete_zahialga_hural = DeleteZahialgaHural.Field()
     join_zahialga_hural = JoinZahialgaHural.Field()
+    check_zahialga_by_qpay_invoice_id = CheckZahialgaByQpayInvoiceID.Field()
