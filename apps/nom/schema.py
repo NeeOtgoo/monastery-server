@@ -52,6 +52,7 @@ class Query(graphene.ObjectType):
     nom_by_id = graphene.Field(NomType, id=graphene.Int(required=True))
     all_noms = graphene.List(NomType)
     all_nom_bundles = graphene.List(NomBundleType)
+    nom_bundle_by_id = graphene.Field(NomBundleType, id=graphene.Int(required=True))
     all_nom_bundle_noms = graphene.List(NomBundleNomType, nom_bundle=graphene.ID())
 
     def resolve_nomiin_torol(self, info):
@@ -105,6 +106,9 @@ class Query(graphene.ObjectType):
     
     def resolve_all_noms(self, info):
         return Nom.objects.all()
+    
+    def resolve_nom_bundle_by_id(self, info, id):
+        return NomBundle.objects.get(pk=id)
     
 class CreateOrUpdateNom(graphene.Mutation):
     class Arguments:
@@ -187,9 +191,9 @@ class DeleteNomBundle(graphene.Mutation):
         
 class CreateOrUpdateNomBundleNom(graphene.Mutation):
     class Arguments:
-        id = graphene.ID(required=False)
-        nom_bundle_id = graphene.ID(required=True)
-        nom_id = graphene.ID(required=True)
+        id = graphene.Int(required=False)
+        nom_bundle_id = graphene.Int(required=True)
+        nom_id = graphene.Int(required=True)
 
     nom_bundle_nom = graphene.Field(NomBundleNomType)
 
@@ -209,7 +213,7 @@ class CreateOrUpdateNomBundleNom(graphene.Mutation):
     
 class DeleteNomBundleNom(graphene.Mutation):
     class Arguments:
-        id = graphene.ID(required=True)
+        id = graphene.Int(required=True)
 
     success = graphene.Boolean()
 
