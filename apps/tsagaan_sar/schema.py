@@ -11,7 +11,6 @@ from datetime import date
 class TsagaanSarType(DjangoObjectType):
     class Meta:
         model = TsagaanSar
-        fields = ["id", "ner", "ognoo"]
 
 class JilType(graphene.ObjectType):
     year = graphene.Int()
@@ -21,12 +20,12 @@ class JilType(graphene.ObjectType):
 class TsagaanSarSuudalType(DjangoObjectType):
     class Meta:
         model = TsagaanSarSuudal
-        fields = ["id", "tsagaan_sar", "suudal", "jil", "huis", "ognoo"]
+        # fields = ["id", "tsagaan_sar", "suudal", "jil", "huis", "ognoo"]
 
 class TsagaaSarSuudalZasalType(DjangoObjectType):
     class Meta:
         model = TsagaaSarSuudalZasal
-        fields = ["id", "tsagaan_sar_suudal", "nom"]
+        # fields = ["id", "tsagaan_sar_suudal", "nom"]
 
 class BilgiinToololType(DjangoObjectType):
     class Meta:
