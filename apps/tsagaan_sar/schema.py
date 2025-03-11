@@ -33,10 +33,12 @@ class BilgiinToololType(DjangoObjectType):
         fields = ["id", "bilgiin_toolol", "ognoo"]
 
 class TsagaanSarSuudalInputType(graphene.InputObjectType):
+    id = graphene.String(required=True)
     suudal = graphene.String(required=True)
     jil = graphene.String(required=True)
     huis = graphene.String(required=True)
     ognoo = graphene.Date()
+    nom = graphene.List(graphene.String)
  
 class Query(graphene.ObjectType):
     tsagaan_sar = graphene.List(TsagaanSarType)
@@ -47,7 +49,6 @@ class Query(graphene.ObjectType):
     tsagaan_sar_suudal_zasal_nom = graphene.List(NomType, jil=graphene.String(required=True), huis=graphene.String(required=True), ognoo=graphene.Int(required=True))
     all_bilgiin_toolol = graphene.List(BilgiinToololType)
     todays_bilgiin_toolol = graphene.Field(BilgiinToololType)
-    
     
     @login_required
     def resolve_tsagaan_sar(self, info):
@@ -234,13 +235,20 @@ class MassStoreTsagaanSarSuudal(graphene.Mutation):
         tsagaan_sar_o = TsagaanSar.objects.get(pk=tsagaan_sar)
         
         for s in suudal:
-            TsagaanSarSuudal.objects.create(
+            suudal_o = TsagaanSarSuudal.objects.create(
                 tsagaan_sar=tsagaan_sar_o,
                 suudal=s.suudal,
                 jil=s.jil,
                 huis=s.huis,
                 ognoo=s.ognoo
             )
+            
+            for n in s.nom:
+                nom_o = Nom.objects.get(pk=n)
+                TsagaaSarSuudalZasal.objects.create(
+                    tsagaan_sar_suudal=suudal_o,
+                    nom=nom_o
+                )
         return MassStoreTsagaanSarSuudal(success=True)
  
 class CreateOrUpdateBigiinToolol(graphene.Mutation):

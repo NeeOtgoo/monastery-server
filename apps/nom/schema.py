@@ -24,10 +24,12 @@ class NomBundleNomType(DjangoObjectType):
         fields = ["id", "nom_bundle", "nom"]
 
 class NomInputType(graphene.InputObjectType):
+    id = graphene.String()
     ner = graphene.String()
     tailbar = graphene.String()
     une = graphene.Int()
-
+    online_zahialga_avah = graphene.Boolean()
+    
 class NomFilterInputType(graphene.InputObjectType):
     ner = graphene.String()
     tailbar = graphene.String()
@@ -154,7 +156,7 @@ class MassStoreNom(graphene.Mutation):
     
     def mutate(self, info, nom):
         for n in nom:
-            Nom.objects.create(ner=n.ner, tailbar=n.tailbar, une=n.une)
+            Nom.objects.create(ner=n.ner, tailbar=n.tailbar, une=n.une, id=n.id, online_zahialga_avah=n.online_zahialga_avah)
         return MassStoreNom(success=True)
 
 class CreateOrUpdateNomBundle(graphene.Mutation):

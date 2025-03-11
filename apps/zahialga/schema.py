@@ -129,7 +129,7 @@ class CreateZahialga(graphene.Mutation):
         
         qpay_env_data = resolve_qpay_env_data()    
         
-        qpay_call_back_url = "https://bd5492c3ee85.ngrok.io/payments?payment_id=1234567"
+        qpay_call_back_url = f"https://api.itgeltugsbayasgalant.mn/graphql/#query=mutation%20%7B%0A%20%20checkZahialga%20(utas%3A%20{utas})%20%7B%0A%20%20%20%20success%0A%20%20%7D%0A%7D"
         
         total_price = 0  
         
