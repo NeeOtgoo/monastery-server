@@ -92,14 +92,15 @@ class Query(graphene.ObjectType):
     
     @login_required
     def resolve_all_bilgiin_toolol(self, info):
-        return BigiinToolol.objects.all().order_by('-ognoo')
+        return BigiinToolol.objects.filter(ognoo__gte=date.today()).order_by('-ognoo')
     
     def resolve_todays_bilgiin_toolol(self, info):
         
         try:
             return BigiinToolol.objects.get(ognoo=date.today())
         except BigiinToolol.DoesNotExist:
-            raise GraphQLError("Байхгүээ")
+            dummy_object = BigiinToolol(ognoo=date.today(), bilgiin_toolol="Мэдээлэл байхгүй")
+            return dummy_object
     
 class CreateOrUpdateTsagaanSar(graphene.Mutation):
     class Arguments:
