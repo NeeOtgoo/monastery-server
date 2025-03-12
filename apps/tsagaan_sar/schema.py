@@ -99,7 +99,7 @@ class Query(graphene.ObjectType):
         try:
             return BigiinToolol.objects.get(ognoo=date.today())
         except BigiinToolol.DoesNotExist:
-            dummy_object = BigiinToolol(ognoo=date.today(), bilgiin_toolol="Мэдээлэл байхгүй")
+            dummy_object = BigiinToolol(ognoo=date.today(), bilgiin_toolol="Мэдээлэл байхгүй", id=1)
             return dummy_object
     
 class CreateOrUpdateTsagaanSar(graphene.Mutation):
