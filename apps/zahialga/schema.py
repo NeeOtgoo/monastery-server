@@ -107,8 +107,9 @@ class Query(graphene.ObjectType):
         
         return TotalPaidUniinDunType(zahialga=za[0], total=za[1])
     
+    @login_required
     def resolve_all_zahialga(self, info):
-        return Zahialga.objects.all()
+        return Zahialga.objects.all().order_by('-uussen_ognoo')
     
 class CreateZahialga(graphene.Mutation):
     class Arguments:
@@ -284,7 +285,8 @@ class CreateZahialgaHural(graphene.Mutation):
         mute_all = graphene.Boolean(default_value=False)
         
     zahialga_hural = graphene.Field(ZahialgaHuralType)
-        
+    
+    @login_required    
     def mutate(self, info, zahialga, mute_all):
         zahialga_o = Zahialga.objects.get(pk=zahialga)
         zahialga_hural = ZahialgaHural(
@@ -300,6 +302,7 @@ class DeleteZahialgaHural(graphene.Mutation):
 
     success = graphene.Boolean(default_value=False)
 
+    @login_required
     def mutate(self, info, zahialga):
         
         zahialga_o = Zahialga.objects.get(pk=zahialga)
@@ -333,6 +336,7 @@ class SetSuccessZahialga(graphene.Mutation):
 
     success = graphene.Boolean(default_value=False)
 
+    @login_required
     def mutate(self, info, zahialga):
         zahialga_o = Zahialga.objects.get(pk=zahialga)
         zahialga_o.tolov = "SUCCESS"
