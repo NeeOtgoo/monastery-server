@@ -1,4 +1,4 @@
-from django.db.models import Model, CharField, DateField, ForeignKey, CASCADE, IntegerField, TextField, BooleanField, Sum
+from django.db.models import Model, CharField, DateField, ForeignKey, CASCADE, IntegerField, TextField, BooleanField, Sum, DateTimeField
 import uuid
 from apps.nom.models import Nom
 from utils.model import JIL_CHOICES, HUIS_CHOICES, TOLBORIIN_TOLOV_CHOICES
@@ -24,8 +24,8 @@ class Zahialga(Model):
     qpay_qr_text = TextField(null=True)
     qpay_qr_image = TextField(null=True)
     qpay_shortUrl = TextField(null=True)
-    uussen_ognoo = DateField(auto_now_add=True)
-    shinechlegdsen_ognoo = DateField(auto_now=True)
+    uussen_ognoo = DateTimeField(auto_now_add=True)
+    shinechlegdsen_ognoo = DateTimeField(null=True, blank=True)
     
     def save(self, *args, **kwargs):
         if not self.uuid4:

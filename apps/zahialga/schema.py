@@ -4,6 +4,7 @@ import requests
 import json
 import environ
 from datetime import datetime, date
+from django.utils.timezone import now 
 from requests.structures import CaseInsensitiveDict
 from .models import Zahialga, ZahialgaNom, QpayToken, ZahialgaDeepLink, ZahialgaHural
 from apps.nom.models import Nom
@@ -260,6 +261,7 @@ class CheckZahialga(graphene.Mutation):
         
         if request_resp['count'] != 0:
             zahialga.tolov = "SUCCESS"
+            zahialga.shinechlegdsen_ognoo = now()
             zahialga.save()
         
         try:
@@ -340,6 +342,7 @@ class SetSuccessZahialga(graphene.Mutation):
     def mutate(self, info, zahialga):
         zahialga_o = Zahialga.objects.get(pk=zahialga)
         zahialga_o.tolov = "SUCCESS"
+        zahialga_o.shinechlegdsen_ognoo = now()
         zahialga_o.save()
         return SetSuccessZahialga(success=True)
 
@@ -384,6 +387,7 @@ class CheckZahialgaByQpayInvoiceID(graphene.Mutation):
             
             if request_resp['count'] != 0:
                 zahialga.tolov = "SUCCESS"
+                zahialga.shinechlegdsen_ognoo = now()
                 zahialga.save()
             
             return CheckZahialgaByQpayInvoiceID(
