@@ -53,7 +53,7 @@ INSTALLED_APPS = [
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api.itgeltugsbayasgalant.mn",
-    "https://server.itgeltugsbayasgalant.mn"
+    "http://server.itgeltugsbayasgalant.mn"
 ]
 
 
